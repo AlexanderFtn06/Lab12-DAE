@@ -8,7 +8,7 @@ Faltan **tres piezas** que escribes tú, contra pruebas: el **módulo cliente de
 
 Todo es **local**: no hace falta Django. La red es simulada (un adaptador de Axios en `src/lib/`), con retardo, con un
 servidor que se puede «apagar» y con la comprobación de CORS que haría el navegador. Para probar contra la API real del
-laboratorio 8, ver «Con la API real» más abajo. **Este extra no sustituye el Lab 12 oficial.**
+laboratorio 8, ver «Con la API real» más abajo. **Este extra sustituye al Lab 12 oficial: se entrega en la tarea «Lab #12» del campus, en lugar de la guía regular.**
 
 La guía del laboratorio (con su rúbrica) está en el campus virtual; aquí está el código.
 
