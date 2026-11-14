@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { createExam, deleteExam, describeError, listExams } from "./api";
 
@@ -13,16 +14,29 @@ export default function useExams() {
   useEffect(() => {
     setStatus("loading");
     setError(null);
-    listExams()
+    const controller = new AbortController();
+    let cancelled = false;
+    listExams({ signal: controller.signal })
       .then((data) => {
-        setExams(data);
-        setStatus("ready");
+        if (!cancelled) {
+          setExams(data);
+          setStatus("ready");
+        }
       })
       .catch((err) => {
-        setError(describeError(err));
-        setExams([]);
-        setStatus("error");
+        if (cancelled || axios.isCancel(err)) {
+          // petición cancelada, no actualizar estado
+        } else {
+          setError(describeError(err));
+          setExams([]);
+          setStatus("error");
+        }
       });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [attempt]);
 
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
