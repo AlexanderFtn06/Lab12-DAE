@@ -16,9 +16,9 @@
 // TODO 3: `remove` and `create`. NEVER swallow an error: set `actionError` with describeError. `create` must
 //         ignore a second call while the first one is still in flight (use a ref: a state is too late).
 // Rule of the course: no hook inside an if, a loop or after a return.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { listExams, describeError } from "./api";
+import { createExam, deleteExam, listExams, describeError } from "./api";
 
 export default function useExams() {
   const [status, setStatus] = useState("loading");
@@ -27,6 +27,7 @@ export default function useExams() {
   const [error, setError] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const creating = useRef(false);
   
   const [reloadCount, setReloadCount] = useState(0);
 
@@ -72,7 +73,36 @@ export default function useExams() {
     actionError,
     saving,
     reload,
-    remove: async () => false,
-    create: async () => false,
+    remove: async (id) => {
+      setActionError(null);
+      try {
+        await deleteExam(id);
+        setExams((exams) => exams.filter((exam) => exam.id !== id));
+        return true;
+      } catch (err) {
+        setActionError(describeError(err));
+        return false;
+      }
+    },
+    create: async (title) => {
+      if (creating.current) {
+        return false;
+      }
+      creating.current = true;
+      setActionError(null);
+      setSaving(true);
+      try {
+        const exam = await createExam(title);
+        setExams((exams) => [...exams, exam]);
+        setSaving(false);
+        creating.current = false;
+        return true;
+      } catch (err) {
+        setActionError(describeError(err));
+        setSaving(false);
+        creating.current = false;
+        return false;
+      }
+    },
   };
 }
