@@ -11,22 +11,62 @@
 //   remove(id)   DELETE; when the server confirms, the exam disappears from `exams`; resolves true or false
 //   create(title) POST; when the server confirms, the new exam is added; resolves true or false
 //
-// TODO 1: the state and a useEffect that lists, with the three states. The effect gets an AbortController and a
-//         `cancelled` flag, and its cleanup sets the flag and aborts: a late answer must never overwrite a newer one.
+// TODO 1: the state and a useEffect that lists, with the three states.
 // TODO 2: `reload` (a counter that is a dependency of the effect is enough).
 // TODO 3: `remove` and `create`. NEVER swallow an error: set `actionError` with describeError. `create` must
 //         ignore a second call while the first one is still in flight (use a ref: a state is too late).
 // Rule of the course: no hook inside an if, a loop or after a return.
-import { createExam, deleteExam, describeError, listExams } from "./api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { listExams, describeError } from "./api";
 
 export default function useExams() {
+  const [status, setStatus] = useState("loading");
+  
+  const [exams, setExams] = useState([]);
+  const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  
+  const reloadCount = useRef(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    listExams({})
+      .then((data) => {
+        if (!cancelled) {
+          setExams(data);
+          setStatus("ready");
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(describeError(err));
+          setStatus("error");
+          setExams([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadCount.current]);
+
+  const reload = useCallback(() => {
+    reloadCount.current += 1;
+    setStatus("loading");
+    setExams([]);
+    setError(null);
+    setActionError(null);
+  }, []);
+
   return {
-    status: "loading",
-    exams: [],
-    error: null,
-    actionError: null,
-    saving: false,
-    reload: () => {},
+    status,
+    exams,
+    error,
+    actionError,
+    saving,
+    reload,
     remove: async () => false,
     create: async () => false,
   };
