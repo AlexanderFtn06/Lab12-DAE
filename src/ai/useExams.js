@@ -12,15 +12,16 @@ export default function useExams() {
 
   useEffect(() => {
     setStatus("loading");
+    setError(null);
     listExams()
       .then((data) => {
         setExams(data);
         setStatus("ready");
       })
       .catch((err) => {
-        console.error("Error loading exams", err);
+        setError(describeError(err));
         setExams([]);
-        setStatus("ready");
+        setStatus("error");
       });
   }, [attempt]);
 
@@ -28,26 +29,29 @@ export default function useExams() {
 
   const remove = useCallback(async (id) => {
     try {
+      setActionError(null);
       await deleteExam(id);
       setExams((current) => current.filter((exam) => exam.id !== id));
       return true;
     } catch (err) {
-      console.error("Error deleting exam", err);
+      setActionError(describeError(err));
+      return false;
     }
   }, []);
 
-  const create = useCallback(async (title) => {
+    const create = useCallback(async (title) => {
     if (creating.current) {
       return false;
     }
     creating.current = true;
+    setActionError(null);
     setSaving(true);
     try {
       const exam = await createExam(title);
       setExams((current) => [...current, exam]);
       return true;
     } catch (err) {
-      console.error("Error creating exam", err);
+      setActionError(describeError(err));
       return false;
     } finally {
       creating.current = false;
