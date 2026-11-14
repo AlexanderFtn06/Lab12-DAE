@@ -1,0 +1,11 @@
+api.js - implementation of TODO 1-6
+
+Changes made to src/client/api.js:
+1. API_URL: set to import.meta.env.VITE_API_URL || "http://localhost:8000/api"
+2. api: axios.create with baseURL: API_URL, timeout: 8000, headers: { Accept: "application/json" }
+3. listExams({ signal }): GET "/exams/" with signal, returns response.data
+4. createExam(title): POST "/exams/" with { title }, returns response.data
+5. deleteExam(id): DELETE `/exams/${id}/`, resolves with undefined
+6. describeError(error): Spanish error messages for ERR_NETWORK, ECONNABORTED/ETIMEDOUT, 400 (field messages), 404, 500+, and generic fallback
+
+Test results: 14/14 passed
