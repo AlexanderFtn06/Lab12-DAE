@@ -16,7 +16,8 @@
 // TODO 3: `remove` and `create`. NEVER swallow an error: set `actionError` with describeError. `create` must
 //         ignore a second call while the first one is still in flight (use a ref: a state is too late).
 // Rule of the course: no hook inside an if, a loop or after a return.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import axios from "axios";
 import { listExams, describeError } from "./api";
 
 export default function useExams() {
@@ -27,11 +28,12 @@ export default function useExams() {
   const [actionError, setActionError] = useState(null);
   const [saving, setSaving] = useState(false);
   
-  const reloadCount = useRef(0);
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
+    const controller = new AbortController();
     let cancelled = false;
-    listExams({})
+    listExams({ signal: controller.signal })
       .then((data) => {
         if (!cancelled) {
           setExams(data);
@@ -40,7 +42,9 @@ export default function useExams() {
         }
       })
       .catch((err) => {
-        if (!cancelled) {
+        if (axios.isCancel(err)) {
+          // petición cancelada, no actualizar estado
+        } else if (!cancelled) {
           setError(describeError(err));
           setStatus("error");
           setExams([]);
@@ -49,16 +53,17 @@ export default function useExams() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [reloadCount.current]);
+  }, [reloadCount]);
 
   const reload = useCallback(() => {
-    reloadCount.current += 1;
+    setReloadCount((n) => n + 1);
     setStatus("loading");
     setExams([]);
     setError(null);
     setActionError(null);
-  }, []);
+  }, [reloadCount]);
 
   return {
     status,
